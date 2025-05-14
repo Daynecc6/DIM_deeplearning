@@ -1,4 +1,4 @@
-# classification.py  –  original version + SE flag (3 tiny edits)
+
 import torch, torch.nn as nn
 from torchvision.datasets import CIFAR10
 from torch.utils.data import DataLoader, random_split
@@ -12,7 +12,7 @@ import argparse
 import warnings
 warnings.filterwarnings("ignore", message=".*weights_only=False.*", category=FutureWarning)
 
-# ──────────────────────── precision util ────────────────────────
+
 def precision(confusion):
     correct   = confusion * torch.eye(confusion.shape[0], device=confusion.device)
     incorrect = confusion - correct
@@ -22,7 +22,7 @@ def precision(confusion):
     acc       = correct.sum().item() / confusion.sum().item()
     return prec_cls, acc
 
-# ───────────────────────── argparse ─────────────────────────────
+
 parser = argparse.ArgumentParser('DeepInfoMax CIFAR-10 evaluation')
 parser.add_argument('--run_id',           type=int, default=1)
 parser.add_argument('--self_attention',   action='store_true')
@@ -34,10 +34,10 @@ parser.add_argument('--encoder_epoch',    type=int, default=100)
 parser.add_argument('--epochs',           type=int, default=30)
 parser.add_argument('--reload',           type=int, default=None)
 parser.add_argument('--fully_supervised', action='store_true')
-# ─── NEW: enable channel attention in the encoder ───────────────
+
 parser.add_argument('--se_local',         action='store_true',
                     help='Enable Squeeze-Excite in encoder')
-# ────────────────────────────────────────────────────────────────
+
 args = parser.parse_args()
 
 device     = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,14 +48,14 @@ run_id     = args.run_id
 model_dir = Path(f'./models/run{run_id}')
 model_dir.mkdir(parents=True, exist_ok=True)
 
-# ───────────────────── CIFAR-10 loaders ────────────────────────
+
 ds = CIFAR10('cifar', download=True, transform=ToTensor())
 n_train = len(ds) * 9 // 10
 train_ds, test_ds = random_split(ds, [n_train, len(ds) - n_train])
 trL = DataLoader(train_ds, batch_size=batch_size, shuffle=True,  drop_last=True)
 teL = DataLoader(test_ds,  batch_size=batch_size, shuffle=False, drop_last=False)
 
-# ───────────────────── model / optimiser ───────────────────────
+
 classifier, optim, results, start_ep = None, None, None, 1
 
 if args.reload is not None:
@@ -76,7 +76,7 @@ if classifier is None:
             patch_only = args.patch_only,
             k_channels = args.sa_channels,
             patch_size = args.patch_size,
-            se_local   = args.se_local          # ← NEW
+            se_local   = args.se_local          
         )
         classifier = nn.Sequential(encoder, models.Classifier()).to(device)
     else:
@@ -88,7 +88,7 @@ if classifier is None:
                 patch_only = args.patch_only,
                 k_channels = args.sa_channels,
                 patch_size = args.patch_size,
-                se_local   = args.se_local      # ← NEW
+                se_local   = args.se_local      
             ).to(device)
         else:
             classifier = models.DeepInfoAsLatent(
@@ -98,7 +98,7 @@ if classifier is None:
                 patch_only = args.patch_only,
                 k_channels = args.sa_channels,
                 patch_size = args.patch_size,
-                se_local   = args.se_local      # ← NEW
+                se_local   = args.se_local      
             ).to(device)
     optim   = Adam(classifier.parameters(), lr=1e-4)
     results = {'epoch':[], 'train_loss':[], 'test_loss':[], 'accuracy':[]}
@@ -106,7 +106,7 @@ if classifier is None:
 criterion = nn.CrossEntropyLoss()
 print(f'Training epochs {start_ep}–{start_ep+args.epochs-1}')
 
-# ───────────────────────── training loop ───────────────────────
+
 for epoch in range(start_ep, start_ep + args.epochs):
     classifier.train()
     tr_losses = []
@@ -119,7 +119,7 @@ for epoch in range(start_ep, start_ep + args.epochs):
         tr_losses.append(loss.item())
     train_loss = stats.mean(tr_losses)
 
-    # ───────────── evaluation ─────────────
+    
     classifier.eval()
     te_losses = []; conf = torch.zeros(num_cls, num_cls, device=device)
     with torch.no_grad():
@@ -132,7 +132,7 @@ for epoch in range(start_ep, start_ep + args.epochs):
     test_loss = stats.mean(te_losses)
     prec, acc = precision(conf)
 
-    # ───────────── logging ───────────────
+    
     print(f'Epoch {epoch}: TrainLoss={train_loss:.4f}  TestLoss={test_loss:.4f}  Acc={acc:.4f}')
     print(f'Class precisions: {prec}')
 

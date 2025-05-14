@@ -1,7 +1,7 @@
 from pathlib import Path
 import torch, torch.nn as nn, torch.nn.functional as F
 
-# ─────────────────── Channel attention (Squeeze-and-Excite) ───────────────
+
 class SE(nn.Module):
     def __init__(self, c: int, r: int = 16):
         super().__init__()
@@ -13,7 +13,7 @@ class SE(nn.Module):
     def forward(self, x):
         return x * self.fc(self.avg(x))
 
-# ─────────────────── Self-Attention block (pre-norm) ───────────────────────
+
 class ResidualSA(nn.Module):
     def __init__(self, in_channels: int, k_channels: int = 32):
         super().__init__()
@@ -37,7 +37,7 @@ class ResidualSA(nn.Module):
         out = (v @ attn.transpose(1,2)).reshape(b,c,h,w)
         return x + self.dropout(self.gamma * out)
 
-# ───────────────────── Encoders ─────────────────────
+
 class Encoder(nn.Module):
     def __init__(self, se_local=False):
         super().__init__()
@@ -56,7 +56,7 @@ class Encoder(nn.Module):
         z  = self.fc(h2.flatten(1))
         return z,f
 
-# ───────────── Patch-only encoder  (BN restored) ─────────────
+
 class EncoderPatchOnly(nn.Module):
     def __init__(self, patch_size=4, se_local=False):
         super().__init__()
@@ -67,7 +67,7 @@ class EncoderPatchOnly(nn.Module):
         self.se  = SE(512) if se_local else nn.Identity()
 
         self.patch = nn.Conv2d(512, 512, patch_size, patch_size)
-        self.sa_bn = nn.BatchNorm2d(512)                      # ← restored BN
+        self.sa_bn = nn.BatchNorm2d(512)                      
 
         g = 20 // patch_size
         self.fc = nn.Linear(512 * g * g, 64)
@@ -79,7 +79,7 @@ class EncoderPatchOnly(nn.Module):
         h2 = F.relu(self.bn3(self.c3(h2)))
         h2 = self.se(h2)
         hp = self.patch(h2)
-        hp = self.sa_bn(hp)                                   # ← BN applied
+        hp = self.sa_bn(hp)                                   
         z  = self.fc(hp.flatten(1))
         return z, f
 
@@ -107,13 +107,13 @@ class EncoderSA(nn.Module):
         z  = self.fc(hp.flatten(1))
         return z,f
 
-# ─────────── factory & rest of file stay unchanged ───────────
+
 def create_encoder(use_sa=False, patch_only=False, k_channels=32, patch_size=4, se_local=False):
     if patch_only:
         return EncoderPatchOnly(patch_size, se_local)
     return EncoderSA(k_channels, patch_size, se_local) if use_sa else Encoder(se_local)
 
-# ────────── Discriminators & Classifier ──────────
+
 class GlobalDiscriminator(nn.Module):
     def __init__(self):
         super().__init__()

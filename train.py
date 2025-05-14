@@ -1,5 +1,5 @@
-# train.py  –  DIM / SA‑DIM trainer with transfer learning support (updated)
-# ----------------------------------------------------------------
+
+
 import argparse, statistics as stats, torch, math
 import torch.nn as nn, torch.nn.functional as F
 from torch.optim import AdamW
@@ -74,7 +74,7 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Dataset setup
+    
     tf_train = T.Compose([
         T.RandomCrop(32, padding=4),
         T.RandomHorizontalFlip(),
@@ -85,7 +85,7 @@ def main():
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=True,
                         drop_last=True, num_workers=4, pin_memory=True)
 
-    # Model initialization with transfer support
+    
     if args.transfer_from and args.resume > 0:
         print(f"⚡ Transfer learning from run{args.transfer_from} epoch {args.resume}")
         encoder = create_encoder(use_sa=True,
@@ -107,7 +107,7 @@ def main():
 
     loss_fn = DeepInfoMaxLoss(alpha=0, beta=1.0, gamma=0.1).to(device)
 
-    # Optimizer setup
+    
     if args.transfer_from:
         sa_params = [p for p in encoder.parameters() if p.requires_grad]
         opt_enc = AdamW(sa_params, lr=args.sa_lr)
@@ -123,7 +123,7 @@ def main():
     root = Path(f'models/run{args.run_id}')
     root.mkdir(parents=True, exist_ok=True)
 
-    # Resume logic
+    
     start_epoch = args.resume
     if start_epoch > 0 and not args.transfer_from:
         enc_ckpt = root / f'encoder{start_epoch}.wgt'
@@ -144,7 +144,7 @@ def main():
                 print(f"Error loading optimizer state: {e}. Starting with fresh optimizer state.")
         print(f"Resumed from epoch {start_epoch}")
 
-    # Training loop
+    
     for epoch in range(start_epoch + 1, args.epochs + 1):
         if not args.transfer_from:
             if epoch <= args.warmup:
@@ -160,7 +160,7 @@ def main():
             opt_loss.zero_grad()
 
             y, M = encoder(x)
-            M_ = torch.cat((M[1:], M[:1]), 0)  # Negative sample
+            M_ = torch.cat((M[1:], M[:1]), 0)  
             loss = loss_fn(y, M, M_)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(encoder.parameters(), 0.5)

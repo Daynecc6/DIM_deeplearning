@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 import subprocess
 import sys
 import os
@@ -15,29 +15,29 @@ def main():
     print("-" * 70)
 
     try:
-        # Get the directory of the current script
+        
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # Construct the absolute path to evaluate_models.py
+        
         evaluate_script_path = os.path.join(script_dir, "evaluate_models.py")
 
         print(f"DEBUG: sys.executable is: {sys.executable}")
         print(f"DEBUG: current working directory is: {os.getcwd()}")
         print(f"DEBUG: path to evaluate_models.py is: {evaluate_script_path}")
         
-        # Construct the command using the absolute path to the script
+        
         command = [sys.executable, evaluate_script_path, "--runs"] + run_ids_to_evaluate
         
-        # Run the command
-        # We capture and print output in real-time.
-        # Set PYTHONIOENCODING=utf-8 for the subprocess to ensure it uses UTF-8 for its stdio.
+        
+        
+        
         sub_env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, universal_newlines=True, encoding='utf-8', errors='replace', env=sub_env)
         
         if process.stdout:
             for line in process.stdout:
-                print(line, end='') # Print each line as it comes
+                print(line, end='') 
         
-        process.wait() # Wait for the subprocess to complete
+        process.wait() 
 
         print("-" * 70)
         if process.returncode == 0:
