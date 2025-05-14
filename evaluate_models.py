@@ -60,7 +60,7 @@ def evaluate_model(run_id, device):
     epoch = int(Path(path).stem.split('w_dim')[-1])
     print(f"  • loading {path} (epoch {epoch})")
     try:
-        model = torch.load(path, map_location=device)
+        model = torch.load(path, map_location=device, weights_only=False)
         retrofit_encoder(model)              # ← patch legacy attrs
         model.to(device).eval()
     except Exception as e:
